@@ -79,14 +79,14 @@ def get_ai_response(user_text):
     response = requests.post("http://localhost:11434/api/generate", json=data)
     return response.json()['response']
 # Start the assistant
-speak("System online. How can I help you?")
+speak("Jarvis is now online. How can I help you, Vicky?")
 def get_time():
     from datetime import datetime
     now = datetime.now()
     return now.strftime("The current time is %H:%M:%S.")
 
 def get_weather(city):
-    api_key = "PASTE_YOUR_API_KEY_HERE"
+    api_key = " XXXXXXXXXXXXXXXXXX" # your API Key from openweathermap.org 
     # The URL where we send our request
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric"
     
