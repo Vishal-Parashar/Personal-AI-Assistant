@@ -69,7 +69,7 @@ def listen():
         print(f"❌ Error: {str(e)[:100]}")
         return ""
 
-
+#
 def get_ai_response(user_text):
     data = {
         "model": "llama3.2:1b",
