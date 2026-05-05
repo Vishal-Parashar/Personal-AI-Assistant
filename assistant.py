@@ -55,20 +55,26 @@ def speak(text):
         # Clean up markdown and special characters
         clean_text = re.sub(r'[*`#_~]', '', text)
         
+        # Clear any stale keypresses in the buffer
+        while msvcrt.kbhit():
+            msvcrt.getch()
+            
         # Speak asynchronously (Flag = 1)
         speaker.Speak(clean_text, 1)
         
         print("[Press any key to interrupt...]")
-        # 2 = Speaking state
-        while speaker.Status.RunningState == 2:
+        # Loop until it's done speaking
+        while not speaker.WaitUntilDone(50):
             # Check if a key was pressed to interrupt
             if msvcrt.kbhit():
-                msvcrt.getch() # Consume the key press
-                # Purge before speak (Flag = 2) with empty string stops current speech
-                speaker.Speak("", 2)
+                # Consume all pressed keys
+                while msvcrt.kbhit():
+                    msvcrt.getch()
+                
+                # Purge before speak (Flag = 2) + Async (Flag = 1) = 3
+                speaker.Speak("", 3)
                 print("[Speech interrupted]")
                 break
-            time.sleep(0.05)
 
 def listen():
     """Listens to the microphone and returns recognized text."""
@@ -150,15 +156,47 @@ def open_app(app_name):
 def main():
     speak("Jarvis is now online.")
     
+    print("\nHow would you like to interact with Jarvis?")
+    print("1. Text Command")
+    print("2. Voice Command")
     while True:
-        command = listen()
+        mode = input("Enter 1 or 2: ").strip()
+        if mode in ['1', '2']:
+            break
+        print("Invalid choice. Please enter 1 or 2.")
+        
+    use_voice = (mode == '2')
+    
+    while True:
+        if use_voice:
+            command = listen()
+        else:
+            command = input("\nYou: ").strip().lower()
+            
         if not command:
             continue
             
         # 1. Exit Commands
         if "exit" in command or "stop" in command or "goodbye" in command:
-            speak("Goodbye!")
+            speak("Have a great day! Goodbye!")
             break
+            
+        # 2. Mode Switching Commands
+        elif "switch to text" in command:
+            if not use_voice:
+                speak("I am already in text mode.")
+            else:
+                use_voice = False
+                speak("Switching to text mode.")
+            continue
+            
+        elif "switch to voice" in command:
+            if use_voice:
+                speak("I am already in voice mode.")
+            else:
+                use_voice = True
+                speak("Switching to voice mode. I am listening.")
+            continue
             
         # 2. Time Command
         elif "time" in command:
