@@ -95,7 +95,7 @@ def listen():
 
 def get_weather(city):
     """Fetches weather data for a given city using OpenWeatherMap."""
-    if OPENWEATHER_API_KEY == "YOUR_OPENWEATHERMAP_API_KEY" or OPENWEATHER_API_KEY == "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX":
+    if OPENWEATHER_API_KEY == "YOUR_OPENWEATHERMAP_API_KEY" or OPENWEATHER_API_KEY == "XXXXXXXXXXXXXXXXXXXXX":
         return "Please set your OpenWeatherMap API key in the script to use weather features."
         
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={OPENWEATHER_API_KEY}&units=metric"
