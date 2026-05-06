@@ -178,7 +178,7 @@ def main():
             
         # 1. Exit Commands
         if "exit" in command or "stop" in command or "goodbye" in command:
-            speak("Have a great day! Goodbye!")
+            speak("have a great day! Goodbye!")
             break
             
         # 2. Mode Switching Commands
