@@ -48,54 +48,101 @@ except Exception as e:
 
 # --- Core Functions ---
 
-def speak(text):
-    """Speaks the text out loud and allows interruption via any key press."""
+def speak(text, interrupt_event=None):
+    """Speaks the text out loud and allows interruption via any key press or threading event."""
     print(f"Jarvis: {text}")
-    if speaker:
+    
+    # Initialize COM for background threads
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+        thread_speaker = win32com.client.Dispatch("SAPI.SpVoice")
+    except Exception as e:
+        print(f"Error initializing thread TTS: {e}")
+        thread_speaker = speaker # Fallback to global if pythoncom not available
+        
+    if thread_speaker:
         # Clean up markdown and special characters
         clean_text = re.sub(r'[*`#_~]', '', text)
         
-        # Clear any stale keypresses in the buffer
-        while msvcrt.kbhit():
-            msvcrt.getch()
+        # Clear any stale keypresses in the buffer if no event is provided
+        if not interrupt_event:
+            while msvcrt.kbhit():
+                msvcrt.getch()
             
         # Speak asynchronously (Flag = 1)
-        speaker.Speak(clean_text, 1)
+        thread_speaker.Speak(clean_text, 1)
         
-        print("[Press any key to interrupt...]")
+        if not interrupt_event:
+            print("[Press any key to interrupt...]")
+            
         # Loop until it's done speaking
-        while not speaker.WaitUntilDone(50):
-            # Check if a key was pressed to interrupt
-            if msvcrt.kbhit():
+        while not thread_speaker.WaitUntilDone(50):
+            # Check if interrupted via GUI event
+            if interrupt_event and interrupt_event.is_set():
+                thread_speaker.Speak("", 3)
+                print("[Speech interrupted]")
+                break
+            # Check if a key was pressed to interrupt (Console mode)
+            elif not interrupt_event and msvcrt.kbhit():
                 # Consume all pressed keys
                 while msvcrt.kbhit():
                     msvcrt.getch()
                 
                 # Purge before speak (Flag = 2) + Async (Flag = 1) = 3
-                speaker.Speak("", 3)
+                thread_speaker.Speak("", 3)
                 print("[Speech interrupted]")
                 break
 
-def listen():
+def listen(status_callback=None):
     """Listens to the microphone and returns recognized text."""
-    recognizer = sr.Recognizer()
-    with sr.Microphone() as source:
-        print("\nListening...")
-        recognizer.adjust_for_ambient_noise(source, duration=0.5)
-        try:
-            audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
-            print("Recognizing...")
-            text = recognizer.recognize_google(audio)
-            print(f"You said: {text}")
-            return text.lower()
-        except sr.WaitTimeoutError:
-            return ""
-        except sr.UnknownValueError:
-            print("Could not understand the audio.")
-            return ""
-        except sr.RequestError as e:
-            print(f"Could not request results from Google Speech Recognition service; {e}")
-            return ""
+    try:
+        import pythoncom
+        pythoncom.CoInitialize()
+    except Exception:
+        pass
+        
+    try:
+        recognizer = sr.Recognizer()
+        with sr.Microphone() as source:
+            if status_callback:
+                status_callback("Listening...")
+            else:
+                print("\nListening...")
+            recognizer.adjust_for_ambient_noise(source, duration=0.5)
+            
+            try:
+                audio = recognizer.listen(source, timeout=5, phrase_time_limit=15)
+                if status_callback:
+                    status_callback("Recognizing...")
+                else:
+                    print("Recognizing...")
+                text = recognizer.recognize_google(audio)
+                print(f"You said: {text}")
+                return text.lower()
+            except sr.WaitTimeoutError:
+                if status_callback: status_callback("Listening timed out.")
+                return ""
+            except sr.UnknownValueError:
+                msg = "Could not understand the audio."
+                if status_callback:
+                    status_callback(msg)
+                else:
+                    print(msg)
+                return ""
+            except sr.RequestError as e:
+                msg = f"API Error: {e}"
+                if status_callback:
+                    status_callback(msg)
+                else:
+                    print(msg)
+                return ""
+    except Exception as e:
+        msg = f"Microphone error: {e}"
+        print(msg)
+        if status_callback:
+            status_callback(msg)
+        return ""
 
 # --- Feature Functions ---
 
@@ -150,6 +197,32 @@ def open_app(app_name):
         return "Opening YouTube."
     else:
         return f"I am not configured to open {app_name} yet."
+
+def process_command(command):
+    """Processes a command string and returns a response string."""
+    command = command.lower().strip()
+    if not command:
+        return ""
+        
+    if "exit" in command or "stop" in command or "goodbye" in command:
+        return "Have a great day! Goodbye!"
+    elif "switch to text" in command or "switch to voice" in command:
+        return "I am now controlled via the GUI."
+    elif "time" in command:
+        now = datetime.datetime.now().strftime("%I:%M %p")
+        return f"The time is {now}."
+    elif "weather in" in command:
+        city = command.split("weather in")[-1].strip()
+        if city:
+            return get_weather(city)
+        return "Please specify a city for the weather."
+    elif "open" in command:
+        app_name = command.split("open", 1)[1].strip()
+        if app_name:
+            return open_app(app_name)
+        return "What application would you like me to open?"
+    else:
+        return get_ai_response(command)
 
 # --- Main Application Loop ---
 
@@ -230,4 +303,5 @@ def main():
             response = get_ai_response(command)
             speak(response)
 
-main()
+if __name__ == "__main__":
+    main()
