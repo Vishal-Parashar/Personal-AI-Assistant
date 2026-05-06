@@ -198,6 +198,31 @@ def open_app(app_name):
     else:
         return f"I am not configured to open {app_name} yet."
 
+def summarize_pdf(filepath):
+    """Extracts text from a PDF and asks the AI to summarize it."""
+    try:
+        import pypdf
+        with open(filepath, 'rb') as file:
+            reader = pypdf.PdfReader(file)
+            text = ""
+            for page in reader.pages:
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+                
+            if not text.strip():
+                return "I could not extract any text from this PDF. It might be scanned or empty."
+                
+            # Truncate to roughly 5000 words (approx 25000 characters) to prevent overloading local model
+            max_chars = 25000
+            if len(text) > max_chars:
+                text = text[:max_chars] + "\n... [Text truncated due to length]"
+                
+            prompt = f"Please provide a comprehensive summary of the following document:\n\n{text}"
+            return get_ai_response(prompt)
+    except Exception as e:
+        return f"An error occurred while reading the PDF: {e}"
+
 def process_command(command):
     """Processes a command string and returns a response string."""
     command = command.lower().strip()
