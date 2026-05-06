@@ -40,7 +40,10 @@ class AssistantGUI(ctk.CTk):
         self.mic_button.grid(row=0, column=2, padx=(0, 10))
         
         self.interrupt_button = ctk.CTkButton(self.input_frame, text="🛑", width=40, command=self.interrupt_speech, fg_color="#E63946", hover_color="#D62828")
-        self.interrupt_button.grid(row=0, column=3)
+        self.interrupt_button.grid(row=0, column=3, padx=(0, 10))
+        
+        self.pdf_button = ctk.CTkButton(self.input_frame, text="📎 PDF", width=60, command=self.select_and_summarize_pdf, fg_color="#457B9D", hover_color="#1D3557")
+        self.pdf_button.grid(row=0, column=4)
         
         self.interrupt_event = threading.Event()
         self.is_processing = False
@@ -116,6 +119,41 @@ class AssistantGUI(ctk.CTk):
     def interrupt_speech(self):
         self.interrupt_event.set()
         self.set_status("Speech interrupted.")
+
+    def select_and_summarize_pdf(self):
+        if self.is_processing:
+            return
+            
+        filepath = ctk.filedialog.askopenfilename(
+            title="Select a PDF to summarize",
+            filetypes=[("PDF Files", "*.pdf")]
+        )
+        
+        if not filepath:
+            return
+            
+        import os
+        filename = os.path.basename(filepath)
+        self.append_to_chat(f"You: [Uploaded {filename} for summarization]")
+        
+        self.is_processing = True
+        self.set_status(f"Reading & Summarizing {filename}...")
+        
+        # Process in background thread
+        threading.Thread(target=self.process_pdf_and_speak, args=(filepath,), daemon=True).start()
+        
+    def process_pdf_and_speak(self, filepath):
+        response = assistant.summarize_pdf(filepath)
+        
+        if response:
+            self.after(0, self.append_to_chat, f"Jarvis: {response}")
+            self.after(0, self.set_status, "Speaking...")
+            
+            self.interrupt_event.clear()
+            assistant.speak(response, self.interrupt_event)
+            
+        self.after(0, self.set_status, "Ready.")
+        self.is_processing = False
 
 if __name__ == "__main__":
     app = AssistantGUI()
