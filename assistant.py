@@ -3,6 +3,7 @@ import sys
 import time
 import datetime
 import json
+import base64
 import requests
 import subprocess
 import webbrowser
@@ -38,6 +39,7 @@ if platform.system() == "Windows" and platform.machine() == "ARM64":
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.2:1b"
+OLLAMA_VISION_MODEL = "llava"  # Requires: ollama pull llava
 
 # Initialize Windows SAPI5 Speech Engine
 try:
@@ -183,20 +185,199 @@ def get_ai_response(prompt):
 def open_app(app_name):
     """Attempts to open common applications based on keywords."""
     app_name = app_name.lower().strip()
-    if "notepad" in app_name:
-        subprocess.Popen("notepad.exe")
-        return "Opening Notepad."
-    elif "calculator" in app_name:
-        subprocess.Popen("calc.exe")
-        return "Opening Calculator."
-    elif "chrome" in app_name:
+
+    # --- Browsers ---
+    if "chrome" in app_name:
         subprocess.Popen("start chrome", shell=True)
         return "Opening Google Chrome."
+    elif "firefox" in app_name:
+        subprocess.Popen("start firefox", shell=True)
+        return "Opening Firefox."
+    elif "edge" in app_name:
+        subprocess.Popen("start msedge", shell=True)
+        return "Opening Microsoft Edge."
+    elif "brave" in app_name:
+        subprocess.Popen(r"start brave", shell=True)
+        return "Opening Brave Browser."
+    elif "opera" in app_name:
+        subprocess.Popen("start opera", shell=True)
+        return "Opening Opera."
+
+    # --- Productivity & Office ---
+    elif "notepad++" in app_name or "notepad plus" in app_name:
+        subprocess.Popen("notepad++.exe", shell=True)
+        return "Opening Notepad++."
+    elif "notepad" in app_name:
+        subprocess.Popen("notepad.exe")
+        return "Opening Notepad."
+    elif "word" in app_name:
+        subprocess.Popen("start winword", shell=True)
+        return "Opening Microsoft Word."
+    elif "excel" in app_name:
+        subprocess.Popen("start excel", shell=True)
+        return "Opening Microsoft Excel."
+    elif "powerpoint" in app_name:
+        subprocess.Popen("start powerpnt", shell=True)
+        return "Opening Microsoft PowerPoint."
+    elif "outlook" in app_name:
+        subprocess.Popen("start outlook", shell=True)
+        return "Opening Microsoft Outlook."
+    elif "onenote" in app_name:
+        subprocess.Popen("start onenote", shell=True)
+        return "Opening Microsoft OneNote."
+
+    # --- System Tools ---
+    elif "calculator" in app_name or "calc" in app_name:
+        subprocess.Popen("calc.exe")
+        return "Opening Calculator."
+    elif "task manager" in app_name:
+        subprocess.Popen("taskmgr.exe")
+        return "Opening Task Manager."
+    elif "file explorer" in app_name or "explorer" in app_name:
+        subprocess.Popen("explorer.exe")
+        return "Opening File Explorer."
+    elif "control panel" in app_name:
+        subprocess.Popen("control.exe")
+        return "Opening Control Panel."
+    elif "settings" in app_name:
+        subprocess.Popen("start ms-settings:", shell=True)
+        return "Opening Windows Settings."
+    elif "registry" in app_name:
+        subprocess.Popen("regedit.exe")
+        return "Opening Registry Editor."
+    elif "command prompt" in app_name or "cmd" in app_name:
+        subprocess.Popen("cmd.exe")
+        return "Opening Command Prompt."
+    elif "powershell" in app_name:
+        subprocess.Popen("powershell.exe")
+        return "Opening PowerShell."
+    elif "paint" in app_name:
+        subprocess.Popen("mspaint.exe")
+        return "Opening Paint."
+    elif "snipping tool" in app_name or "snip" in app_name:
+        subprocess.Popen("snippingtool.exe", shell=True)
+        return "Opening Snipping Tool."
+    elif "device manager" in app_name:
+        subprocess.Popen("devmgmt.msc", shell=True)
+        return "Opening Device Manager."
+    elif "disk management" in app_name:
+        subprocess.Popen("diskmgmt.msc", shell=True)
+        return "Opening Disk Management."
+    elif "event viewer" in app_name:
+        subprocess.Popen("eventvwr.msc", shell=True)
+        return "Opening Event Viewer."
+
+    # --- Development Tools ---
+    elif "vs code" in app_name or "vscode" in app_name or "visual studio code" in app_name:
+        subprocess.Popen("code", shell=True)
+        return "Opening Visual Studio Code."
+    elif "visual studio" in app_name:
+        subprocess.Popen("start devenv", shell=True)
+        return "Opening Visual Studio."
+    elif "git bash" in app_name:
+        subprocess.Popen("git-bash.exe", shell=True)
+        return "Opening Git Bash."
+    elif "github desktop" in app_name:
+        subprocess.Popen("start github", shell=True)
+        return "Opening GitHub Desktop."
+    elif "postman" in app_name:
+        subprocess.Popen("start Postman", shell=True)
+        return "Opening Postman."
+    elif "android studio" in app_name:
+        subprocess.Popen("start studio64", shell=True)
+        return "Opening Android Studio."
+
+    # --- Media & Entertainment ---
+    elif "vlc" in app_name or "media player" in app_name:
+        subprocess.Popen("vlc.exe", shell=True)
+        return "Opening VLC Media Player."
+    elif "spotify" in app_name:
+        subprocess.Popen("start spotify", shell=True)
+        return "Opening Spotify."
+    elif "photos" in app_name:
+        subprocess.Popen("start ms-photos:", shell=True)
+        return "Opening Photos."
+    elif "movies" in app_name or "windows media" in app_name:
+        subprocess.Popen("start mswindowsvideo:", shell=True)
+        return "Opening Movies & TV."
+    elif "itunes" in app_name:
+        subprocess.Popen("start itunes", shell=True)
+        return "Opening iTunes."
+    elif "audacity" in app_name:
+        subprocess.Popen("audacity.exe", shell=True)
+        return "Opening Audacity."
+
+    # --- Communication ---
+    elif "discord" in app_name:
+        subprocess.Popen("start discord", shell=True)
+        return "Opening Discord."
+    elif "teams" in app_name:
+        subprocess.Popen("start teams", shell=True)
+        return "Opening Microsoft Teams."
+    elif "slack" in app_name:
+        subprocess.Popen("start slack", shell=True)
+        return "Opening Slack."
+    elif "zoom" in app_name:
+        subprocess.Popen("start zoom", shell=True)
+        return "Opening Zoom."
+    elif "telegram" in app_name:
+        subprocess.Popen("start telegram", shell=True)
+        return "Opening Telegram."
+    elif "whatsapp" in app_name:
+        subprocess.Popen("start whatsapp", shell=True)
+        return "Opening WhatsApp."
+    elif "skype" in app_name:
+        subprocess.Popen("start skype", shell=True)
+        return "Opening Skype."
+
+    # --- Utilities ---
+    elif "7-zip" in app_name or "7zip" in app_name:
+        subprocess.Popen(r"C:\Program Files\7-Zip\7zFM.exe", shell=True)
+        return "Opening 7-Zip."
+    elif "winrar" in app_name:
+        subprocess.Popen("winrar.exe", shell=True)
+        return "Opening WinRAR."
+
+    # --- Websites ---
     elif "youtube" in app_name:
         webbrowser.open("https://www.youtube.com")
         return "Opening YouTube."
+    elif "google" in app_name:
+        webbrowser.open("https://www.google.com")
+        return "Opening Google."
+    elif "gmail" in app_name:
+        webbrowser.open("https://mail.google.com")
+        return "Opening Gmail."
+    elif "github" in app_name:
+        webbrowser.open("https://www.github.com")
+        return "Opening GitHub."
+    elif "netflix" in app_name:
+        webbrowser.open("https://www.netflix.com")
+        return "Opening Netflix."
+    elif "reddit" in app_name:
+        webbrowser.open("https://www.reddit.com")
+        return "Opening Reddit."
+    elif "twitter" in app_name or "x.com" in app_name:
+        webbrowser.open("https://www.x.com")
+        return "Opening X (Twitter)."
+    elif "linkedin" in app_name:
+        webbrowser.open("https://www.linkedin.com")
+        return "Opening LinkedIn."
+    elif "amazon" in app_name:
+        webbrowser.open("https://www.amazon.in")
+        return "Opening Amazon."
+    elif "chat gpt" in app_name or "chatgpt" in app_name:
+        webbrowser.open("https://chat.openai.com")
+        return "Opening ChatGPT."
+    elif "maps" in app_name:
+        webbrowser.open("https://maps.google.com")
+        return "Opening Google Maps."
+    elif "translate" in app_name:
+        webbrowser.open("https://translate.google.com")
+        return "Opening Google Translate."
+
     else:
-        return f"I am not configured to open {app_name} yet."
+        return f"I am not configured to open '{app_name}' yet."
 
 def summarize_pdf(filepath):
     """Extracts text from a PDF and asks the AI to summarize it."""
@@ -223,6 +404,44 @@ def summarize_pdf(filepath):
     except Exception as e:
         return f"An error occurred while reading the PDF: {e}"
 
+def analyze_image(filepath, question=None):
+    """Sends an image to the local Ollama LLaVA vision model for analysis."""
+    supported_formats = (".jpg", ".jpeg", ".png", ".bmp", ".gif", ".webp")
+    ext = os.path.splitext(filepath)[1].lower()
+    if ext not in supported_formats:
+        return f"Unsupported image format '{ext}'. Please use: JPG, PNG, BMP, GIF, or WebP."
+
+    try:
+        with open(filepath, "rb") as img_file:
+            image_b64 = base64.b64encode(img_file.read()).decode("utf-8")
+    except FileNotFoundError:
+        return "I could not find the image file. Please check the path and try again."
+    except Exception as e:
+        return f"Error reading image file: {e}"
+
+    prompt = question if question else "Please describe this image in detail. Mention objects, colors, text, people, and any notable elements you see."
+
+    payload = {
+        "model": OLLAMA_VISION_MODEL,
+        "prompt": prompt,
+        "images": [image_b64],
+        "stream": False
+    }
+
+    try:
+        response = requests.post(OLLAMA_URL, json=payload, timeout=120)
+        if response.status_code == 200:
+            return response.json().get("response", "I could not generate a description for this image.")
+        elif response.status_code == 404:
+            return (f"The vision model '{OLLAMA_VISION_MODEL}' is not installed. "
+                    f"Please run: ollama pull {OLLAMA_VISION_MODEL}")
+        else:
+            return f"Vision model returned an error (status {response.status_code})."
+    except requests.exceptions.ConnectionError:
+        return "I cannot connect to my local Ollama server. Please ensure it is running."
+    except requests.exceptions.Timeout:
+        return "The image analysis timed out. Try a smaller image or simpler question."
+
 def process_command(command):
     """Processes a command string and returns a response string."""
     command = command.lower().strip()
@@ -246,6 +465,8 @@ def process_command(command):
         if app_name:
             return open_app(app_name)
         return "What application would you like me to open?"
+    elif any(kw in command for kw in ["analyze image", "describe image", "what's in the image", "look at image"]):
+        return "Please use the image button (🖼️) in the GUI to select an image for me to analyze."
     else:
         return get_ai_response(command)
 

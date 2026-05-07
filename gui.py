@@ -43,7 +43,10 @@ class AssistantGUI(ctk.CTk):
         self.interrupt_button.grid(row=0, column=3, padx=(0, 10))
         
         self.pdf_button = ctk.CTkButton(self.input_frame, text="📎 PDF", width=60, command=self.select_and_summarize_pdf, fg_color="#457B9D", hover_color="#1D3557")
-        self.pdf_button.grid(row=0, column=4)
+        self.pdf_button.grid(row=0, column=4, padx=(0, 10))
+
+        self.image_button = ctk.CTkButton(self.input_frame, text="🖼️ Image", width=75, command=self.select_and_analyze_image, fg_color="#6A4C93", hover_color="#4A2C73")
+        self.image_button.grid(row=0, column=5)
         
         self.interrupt_event = threading.Event()
         self.is_processing = False
@@ -152,6 +155,58 @@ class AssistantGUI(ctk.CTk):
             self.interrupt_event.clear()
             assistant.speak(response, self.interrupt_event)
             
+        self.after(0, self.set_status, "Ready.")
+        self.is_processing = False
+
+    def select_and_analyze_image(self):
+        if self.is_processing:
+            return
+
+        filepath = ctk.filedialog.askopenfilename(
+            title="Select an image to analyze",
+            filetypes=[
+                ("Image Files", "*.jpg *.jpeg *.png *.bmp *.gif *.webp"),
+                ("All Files", "*.*")
+            ]
+        )
+
+        if not filepath:
+            return
+
+        # Ask an optional follow-up question via a dialog
+        question_dialog = ctk.CTkInputDialog(
+            text="Ask a question about the image (or leave blank for a general description):",
+            title="Image Question"
+        )
+        question = question_dialog.get_input()  # None if cancelled, "" if left blank
+
+        if question is None:  # User cancelled the dialog
+            return
+
+        import os
+        filename = os.path.basename(filepath)
+        display_q = f" — \"{question}\"" if question.strip() else ""
+        self.append_to_chat(f"You: [Image: {filename}{display_q}]")
+
+        self.is_processing = True
+        self.set_status(f"Analyzing {filename}...")
+
+        threading.Thread(
+            target=self.process_image_and_speak,
+            args=(filepath, question.strip() or None),
+            daemon=True
+        ).start()
+
+    def process_image_and_speak(self, filepath, question):
+        response = assistant.analyze_image(filepath, question)
+
+        if response:
+            self.after(0, self.append_to_chat, f"Jarvis: {response}")
+            self.after(0, self.set_status, "Speaking...")
+
+            self.interrupt_event.clear()
+            assistant.speak(response, self.interrupt_event)
+
         self.after(0, self.set_status, "Ready.")
         self.is_processing = False
 
